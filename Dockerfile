@@ -54,6 +54,10 @@ RUN chmod +x /bin/tini
 ADD image /
 RUN pip install --upgrade pip && pip install setuptools wheel && pip install -r /usr/lib/web/requirements.txt
 
+ENV OPENVPN_USERNAME=**None** \
+    OPENVPN_PASSWORD=**None** \
+    OPENVPN_PROVIDER=**None** 
+
 EXPOSE 80
 WORKDIR /root
 ENV HOME=/home/ubuntu \
