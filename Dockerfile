@@ -52,7 +52,7 @@ ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /bin/
 RUN chmod +x /bin/tini
 
 ADD image /
-RUN pip install --upgrade pip && pip install setuptools wheel && pip install -r /usr/lib/web/requirements.txt
+RUN pip install --upgrade pip==9.0.3 && pip install setuptools wheel && pip install -r /usr/lib/web/requirements.txt
 
 ENV OPENVPN_USERNAME=**None** \
     OPENVPN_PASSWORD=**None** \
