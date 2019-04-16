@@ -7,6 +7,9 @@ if [ ! -d "$vpn_provider_configs" ]; then
 	exit 1
 fi
 
+# Post process files as paths are now potentially dynamic
+/etc/openvpn/adjustConfigs.sh ${vpn_provider_configs}
+
 echo "Using OpenVPN provider: $OPENVPN_PROVIDER"
 
 if [ ! -z "$OPENVPN_CONFIG" ]
@@ -27,24 +30,24 @@ fi
 
 # add OpenVPN user/pass
 if [ "${OPENVPN_USERNAME}" = "**None**" ] || [ "${OPENVPN_PASSWORD}" = "**None**" ] ; then
-  if [ ! -f /config/openvpn-credentials.txt ] ; then
+  if [ ! -f /etc/openvpn/openvpn-credentials.txt ] ; then
     echo "OpenVPN credentials not set. Exiting."
     exit 1
   fi
   echo "Found existing OPENVPN credentials..."
 else
   echo "Setting OPENVPN credentials..."
-  mkdir -p /config
-  echo $OPENVPN_USERNAME > /config/openvpn-credentials.txt
-  echo $OPENVPN_PASSWORD >> /config/openvpn-credentials.txt
-  chmod 600 /config/openvpn-credentials.txt
+  mkdir -p /etc/openvpn
+  echo $OPENVPN_USERNAME > /etc/openvpn/openvpn-credentials.txt
+  echo $OPENVPN_PASSWORD >> /etc/openvpn/openvpn-credentials.txt
+  chmod 600 /etc/openvpn/openvpn-credentials.txt
 fi
 
 cat >>/etc/supervisor/conf.d/supervisord.conf <<EOL
 
 [program:openvpn]
 priority=30
-directory=/config
+directory=/etc/openvpn
 command=/usr/sbin/openvpn $OPENVPN_OPTS --config "$OPENVPN_CONFIG"
 user=root
 autostart=true

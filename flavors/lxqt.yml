@@ -1,0 +1,23 @@
+---
+addon_packages:
+  - vim-tiny
+  - firefox
+  - chromium-browser
+  - ttf-ubuntu-font-family
+  - ttf-wqy-zenhei
+  - transmission-cli
+  - transmission-common
+  - transmission-daemon
+  - curl
+  - rar
+  - unrar
+  - zip
+  - unzip
+  - ufw
+  - iputils-ping
+  - openvpn
+  - transmission-gtk
+  - transmission-qt
+  - less
+  - vim
+desktop: lxqt

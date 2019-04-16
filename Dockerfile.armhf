@@ -1,12 +1,18 @@
-# Built with arch: amd64 flavor: lxde image: ubuntu:18.04 localbuild: 0
+# Built with arch: armhf flavor: lxde image: ubuntu:18.04 localbuild: 1
 #
 ################################################################################
 # base system
 ################################################################################
 
-FROM ubuntu:18.04 as system
+# qemu helper for arm build
+FROM ubuntu:18.04 as amd64
+RUN apt update && apt install -y qemu-user-static
+FROM arm32v7/ubuntu:18.04 as system
+COPY --from=amd64 /usr/bin/qemu-arm-static /usr/bin/
 
 
+
+RUN sed -i 's#http://archive.ubuntu.com/#http://tw.archive.ubuntu.com/#' /etc/apt/sources.list; 
 
 
 # built-in packages
@@ -26,7 +32,7 @@ RUN add-apt-repository -y ppa:fcwu-tw/apps \
     && apt update \
     && apt install -y --no-install-recommends --allow-unauthenticated \
         xvfb x11vnc=0.9.16-1 \
-        vim-tiny firefox chromium-browser ttf-ubuntu-font-family ttf-wqy-zenhei transmission-cli transmission-common transmission-daemon curl rar unrar zip unzip ufw iputils-ping openvpn transmission-gtk transmission-qt less vim  \
+        vim-tiny firefox chromium-browser ttf-ubuntu-font-family ttf-wqy-zenhei  \
     && add-apt-repository -r ppa:fcwu-tw/apps \
     && apt autoclean -y \
     && apt autoremove -y \
@@ -40,13 +46,12 @@ RUN apt update \
     && rm -rf /var/lib/apt/lists/*
  
  
- 
 # Additional packages require ~600MB
 # libreoffice  pinta language-pack-zh-hant language-pack-gnome-zh-hant firefox-locale-zh-hant libreoffice-l10n-zh-tw
 
 # tini for subreap
 ARG TINI_VERSION=v0.18.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-amd64 /bin/tini
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-armhf /bin/tini
 RUN chmod +x /bin/tini
 
 # ffmpeg
@@ -73,6 +78,8 @@ RUN apt-get update \
 FROM ubuntu:18.04 as builder
 
 
+RUN sed -i 's#http://archive.ubuntu.com/#http://tw.archive.ubuntu.com/#' /etc/apt/sources.list; 
+
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates gnupg patch
@@ -94,12 +101,14 @@ RUN cd /src/web \
     && npm run build
 
 
+RUN cd /src/web/dist/static/novnc && patch -p0 < /src/web/novnc-armhf-1.patch
+
 
 ################################################################################
 # merge
 ################################################################################
 FROM system
-LABEL maintainer="sysadmin@hkskies.com"
+LABEL maintainer="fcwu.tw@gmail.com"
 
 COPY --from=builder /src/web/dist/ /usr/local/lib/web/frontend/
 COPY image /

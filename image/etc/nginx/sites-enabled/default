@@ -1,23 +1,34 @@
 server {
 	listen 80 default_server;
-#listen [::]:6080 default_server ipv6only=on;
+    # listen [::]:80 default_server ipv6only=on;
 
-	root /usr/share/nginx/html;
+    #_SSL_PORT_#listen 443 ssl default_server;
+    #_SSL_PORT_#listen [::]:443 ssl default_server ipv6only=on;
+    #_SSL_PORT_#ssl_certificate /etc/nginx/ssl/nginx.crt;
+    #_SSL_PORT_#ssl_certificate_key /etc/nginx/ssl/nginx.key;
+
+    #_HTTP_PASSWORD_#auth_basic "Private Property";
+    #_HTTP_PASSWORD_#auth_basic_user_file /etc/nginx/.htpasswd;
+
+	root /usr/local/lib/web/frontend/;
 	index index.html index.htm;
 
-    location / {
-        try_files $uri @proxy;
+    location ~ ^/api {
+        try_files $uri @api;
     }
 
-    location = / {
-        try_files $uri @proxy2;
+    location = /websockify {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_buffering off;
+        proxy_connect_timeout   7d;
+        proxy_send_timeout      7d;
+        proxy_read_timeout      7d;
+        proxy_pass http://127.0.0.1:6081;
     }
 
-    location = /redirect.html {
-        try_files $uri @proxy2;
-    }
-
-    location @proxy2 {
+    location @api {
         proxy_set_header X-Real-IP  $remote_addr;
         proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header Host $host;
@@ -31,12 +42,5 @@ server {
         proxy_set_header Host $host;
         proxy_pass http://127.0.0.1:6081;
         max_ranges 0;
-    }
-
-    location = /websockify {
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_pass http://127.0.0.1:6081;
     }
 }
