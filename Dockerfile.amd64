@@ -7,9 +7,7 @@
 FROM ubuntu:18.04 as system
 
 
-
 RUN sed -i 's#http://archive.ubuntu.com/ubuntu/#mirror://mirrors.ubuntu.com/mirrors.txt#' /etc/apt/sources.list; 
-
 
 # built-in packages
 ENV DEBIAN_FRONTEND noninteractive
@@ -23,11 +21,14 @@ RUN apt update \
     && apt autoclean -y \
     && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
+
+ENV X11VNC_VERSION=0.9.16-1
+
 # install debs error if combine together
 RUN add-apt-repository -y ppa:fcwu-tw/apps \
     && apt update \
     && apt install -y --no-install-recommends --allow-unauthenticated \
-        xvfb x11vnc=0.9.16-1 \
+        xvfb x11vnc=$X11VNC_VERSION \
         vim-tiny firefox chromium-browser ttf-ubuntu-font-family ttf-wqy-zenhei  \
     && add-apt-repository -r ppa:fcwu-tw/apps \
     && apt autoclean -y \
@@ -42,12 +43,13 @@ RUN apt update \
     && rm -rf /var/lib/apt/lists/*
  
  
+ 
 # Additional packages require ~600MB
 # libreoffice  pinta language-pack-zh-hant language-pack-gnome-zh-hant firefox-locale-zh-hant libreoffice-l10n-zh-tw
 
-# tini to fix subreap
+# tini for subreap
 ARG TINI_VERSION=v0.18.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /bin/tini
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-amd64 /bin/tini
 RUN chmod +x /bin/tini
 
 # ffmpeg
@@ -57,6 +59,7 @@ RUN apt update \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir /usr/local/ffmpeg \
     && ln -s /usr/bin/ffmpeg /usr/local/ffmpeg/ffmpeg
+
 
 # python library
 COPY rootfs/usr/local/lib/web/backend/requirements.txt /tmp/
@@ -78,8 +81,6 @@ RUN apt-get update \
 FROM ubuntu:18.04 as builder
 
 
-RUN sed -i 's#http://archive.ubuntu.com/ubuntu/#mirror://mirrors.ubuntu.com/mirrors.txt#' /etc/apt/sources.list; 
-
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates gnupg patch
@@ -100,13 +101,17 @@ RUN cd /src/web \
     && yarn \
     && yarn build
 
+# Install transmission related components
+RUN apt-get update \
+    && apt-get install -y transmission-cli transmission-common transmission-daemon curl rar unrar zip unzip ufw iputils-ping openvpn transmission-gtk transmission-qt less vim
+
 
 
 ################################################################################
 # merge
 ################################################################################
 FROM system
-LABEL maintainer="fcwu.tw@gmail.com"
+LABEL maintainer="sysadmin@hkskies.com"
 
 COPY --from=builder /src/web/dist/ /usr/local/lib/web/frontend/
 COPY rootfs /

@@ -1,7 +1,7 @@
 .PHONY: build run
 
 # Default values for variables
-REPO  ?= dorowu/ubuntu-desktop-lxde-vnc
+REPO  ?= jamesfreeman959/docker-ubuntu-transmission-openvpn-vnc-desktop
 TAG   ?= latest
 # you can choose other base image versions
 IMAGE ?= ubuntu:18.04

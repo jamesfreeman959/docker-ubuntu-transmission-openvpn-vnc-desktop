@@ -127,6 +127,10 @@ RUN cd /src/web \
     && yarn \
     && yarn build
 
+# Install transmission related components
+RUN apt-get update \
+    && apt-get install -y transmission-cli transmission-common transmission-daemon curl rar unrar zip unzip ufw iputils-ping openvpn transmission-gtk transmission-qt less vim
+
 {%if arch == "armhf"%}
 RUN cd /src/web/dist/static/novnc && patch -p0 < /src/web/novnc-armhf-1.patch
 {%endif%}
@@ -135,7 +139,7 @@ RUN cd /src/web/dist/static/novnc && patch -p0 < /src/web/novnc-armhf-1.patch
 # merge
 ################################################################################
 FROM system
-LABEL maintainer="fcwu.tw@gmail.com"
+LABEL maintainer="sysadmin@hkskies.com"
 
 COPY --from=builder /src/web/dist/ /usr/local/lib/web/frontend/
 COPY rootfs /

@@ -71,4 +71,10 @@ fi
 PASSWORD=
 HTTP_PASSWORD=
 
+# Disable IPv6 support in UFW to prevent errors at runtime
+sed -i 's/IPV6=.*/IPV6=no/g' /etc/default/ufw
+
+/firewall.sh
+/etc/openvpn/start.sh
+
 exec /bin/tini -- supervisord -n -c /etc/supervisor/supervisord.conf

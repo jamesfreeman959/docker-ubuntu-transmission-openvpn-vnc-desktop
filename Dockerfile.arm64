@@ -4,16 +4,8 @@
 # base system
 ################################################################################
 
-# qemu helper for arm build
-FROM ubuntu:18.04 as amd64
-RUN apt update && apt install -y qemu-user-static
-FROM arm64v8/ubuntu:18.04 as system
-COPY --from=amd64 /usr/bin/qemu-aarch64-static /usr/bin/
-
-
 
 RUN sed -i 's#http://archive.ubuntu.com/ubuntu/#mirror://mirrors.ubuntu.com/mirrors.txt#' /etc/apt/sources.list; 
-
 
 # built-in packages
 ENV DEBIAN_FRONTEND noninteractive
@@ -27,11 +19,14 @@ RUN apt update \
     && apt autoclean -y \
     && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
+
+ENV X11VNC_VERSION=0.9.16-1
+
 # install debs error if combine together
 RUN add-apt-repository -y ppa:fcwu-tw/apps \
     && apt update \
     && apt install -y --no-install-recommends --allow-unauthenticated \
-        xvfb x11vnc=0.9.13-3 x11vnc-data=0.9.13-3 \
+        xvfb x11vnc=$X11VNC_VERSION \
         vim-tiny firefox chromium-browser ttf-ubuntu-font-family ttf-wqy-zenhei  \
     && add-apt-repository -r ppa:fcwu-tw/apps \
     && apt autoclean -y \
@@ -46,6 +41,7 @@ RUN apt update \
     && rm -rf /var/lib/apt/lists/*
  
  
+ 
 # Additional packages require ~600MB
 # libreoffice  pinta language-pack-zh-hant language-pack-gnome-zh-hant firefox-locale-zh-hant libreoffice-l10n-zh-tw
 
@@ -55,8 +51,13 @@ ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-arm64
 RUN chmod +x /bin/tini
 
 # ffmpeg
-RUN mkdir -p /usr/local/ffmpeg \
-    && curl -sSL https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz | tar xJvf - -C /usr/local/ffmpeg/ --strip 1
+RUN apt update \
+    && apt install -y --no-install-recommends --allow-unauthenticated \
+        ffmpeg \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir /usr/local/ffmpeg \
+    && ln -s /usr/bin/ffmpeg /usr/local/ffmpeg/ffmpeg
+
 
 # python library
 COPY rootfs/usr/local/lib/web/backend/requirements.txt /tmp/
@@ -78,8 +79,6 @@ RUN apt-get update \
 FROM ubuntu:18.04 as builder
 
 
-RUN sed -i 's#http://archive.ubuntu.com/ubuntu/#mirror://mirrors.ubuntu.com/mirrors.txt#' /etc/apt/sources.list; 
-
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates gnupg patch
@@ -98,21 +97,22 @@ RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
 COPY web /src/web
 RUN cd /src/web \
     && yarn \
-    && npm run build
+    && yarn build
 
+# Install transmission related components
+RUN apt-get update \
+    && apt-get install -y transmission-cli transmission-common transmission-daemon curl rar unrar zip unzip ufw iputils-ping openvpn transmission-gtk transmission-qt less vim
 
-RUN cd /src/web/dist/static/novnc && patch -p0 < /src/web/novnc-armhf-1.patch
 
 
 ################################################################################
 # merge
 ################################################################################
 FROM system
-LABEL maintainer="fcwu.tw@gmail.com"
+LABEL maintainer="sysadmin@hkskies.com"
 
 COPY --from=builder /src/web/dist/ /usr/local/lib/web/frontend/
 COPY rootfs /
-RUN ln -sf /usr/local/lib/web/frontend/static/websockify" "/usr/local/lib/web/frontend/static/novnc/utils/websockify && chmod +x /usr/local/lib/web/frontend/static/websockify/run
 RUN ln -sf /usr/local/lib/web/frontend/static/websockify /usr/local/lib/web/frontend/static/novnc/utils/websockify && \
 	chmod +x /usr/local/lib/web/frontend/static/websockify/run
 
