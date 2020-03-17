@@ -29,7 +29,7 @@ RUN add-apt-repository -y ppa:fcwu-tw/apps \
     && apt update \
     && apt install -y --no-install-recommends --allow-unauthenticated \
         xvfb x11vnc=$X11VNC_VERSION \
-        vim-tiny firefox chromium-browser ttf-ubuntu-font-family ttf-wqy-zenhei  \
+        vim-tiny firefox chromium-browser ttf-ubuntu-font-family ttf-wqy-zenhei transmission-cli transmission-common transmission-daemon curl rar unrar zip unzip ufw iputils-ping openvpn transmission-gtk transmission-qt less vim  \
     && add-apt-repository -r ppa:fcwu-tw/apps \
     && apt autoclean -y \
     && apt autoremove -y \
@@ -74,6 +74,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/cache/apt/* /tmp/a.txt /tmp/b.txt
 
+# Install transmission related components
+RUN apt-get update \
+    && apt-get install -y transmission-cli transmission-common transmission-daemon curl rar unrar zip unzip ufw iputils-ping openvpn transmission-gtk transmission-qt less vim
+
 
 ################################################################################
 # builder
@@ -100,10 +104,6 @@ COPY web /src/web
 RUN cd /src/web \
     && yarn \
     && yarn build
-
-# Install transmission related components
-RUN apt-get update \
-    && apt-get install -y transmission-cli transmission-common transmission-daemon curl rar unrar zip unzip ufw iputils-ping openvpn transmission-gtk transmission-qt less vim
 
 
 
