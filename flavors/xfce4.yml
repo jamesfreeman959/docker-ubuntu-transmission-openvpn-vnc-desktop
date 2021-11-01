@@ -3,19 +3,4 @@ addon_packages:
   - vim-tiny
   - firefox
   - xfce4-terminal
-  - transmission-cli
-  - transmission-common
-  - transmission-daemon
-  - curl
-  - rar
-  - unrar
-  - zip
-  - unzip
-  - ufw
-  - iputils-ping
-  - openvpn
-  - transmission-gtk
-  - transmission-qt
-  - less
-  - vim
 desktop: xfce4

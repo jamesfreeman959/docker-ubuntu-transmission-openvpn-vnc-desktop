@@ -44,8 +44,11 @@ for configFile in $provider/*.ovpn;
 		# Absolute reference to crl
 		sed -i "s!crl-verify.*\.pem!crl-verify $provider/crl.pem!g" "$configFile"
 
+		# Safety - add a blank line to config file to cope with files that don't end with a newline (e.g. FastestVPN)
+		echo >> "$configFile"
+
 		# Set user-pass file location
-		sed -i "s!auth-user-pass.*!auth-user-pass /etc/openvpn/openvpn-credentials.txt!g" "$configFile"
+		grep -q 'auth-user-pass' "$configFile" && sed -i "s!auth-user-pass.*!auth-user-pass /etc/openvpn/openvpn-credentials.txt!g" "$configFile" || echo 'auth-user-pass /etc/openvpn/openvpn-credentials.txt' >> "$configFile"
 
 		# Ignore IPv6
 		grep -q 'pull-filter ignore "ifconfig-ipv6"' "$configFile" || echo 'pull-filter ignore "ifconfig-ipv6"' >> $configFile

@@ -1,13 +1,13 @@
-# Built with arch: amd64 flavor: lxde image: ubuntu:18.04
+# Built with arch: amd64 flavor: lxde image: ubuntu:20.04
 #
 ################################################################################
 # base system
 ################################################################################
 
-FROM ubuntu:18.04 as system
+FROM ubuntu:20.04 as system
 
 
-RUN sed -i 's#http://archive.ubuntu.com/ubuntu/#mirror://mirrors.ubuntu.com/mirrors.txt#' /etc/apt/sources.list; 
+RUN sed -i 's#http://archive.ubuntu.com/ubuntu/#mirror://mirrors.ubuntu.com/mirrors.txt#' /etc/apt/sources.list;
 
 # built-in packages
 ENV DEBIAN_FRONTEND noninteractive
@@ -21,19 +21,24 @@ RUN apt update \
     && apt autoclean -y \
     && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
-
-ENV X11VNC_VERSION=0.9.16-1
-
 # install debs error if combine together
-RUN add-apt-repository -y ppa:fcwu-tw/apps \
-    && apt update \
+RUN apt update \
     && apt install -y --no-install-recommends --allow-unauthenticated \
-        xvfb x11vnc=$X11VNC_VERSION \
-        vim-tiny firefox chromium-browser ttf-ubuntu-font-family ttf-wqy-zenhei transmission-cli transmission-common transmission-daemon curl rar unrar zip unzip ufw iputils-ping openvpn transmission-gtk transmission-qt less vim  \
-    && add-apt-repository -r ppa:fcwu-tw/apps \
+        xvfb x11vnc \
+        vim-tiny firefox ttf-ubuntu-font-family ttf-wqy-zenhei  \
     && apt autoclean -y \
     && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
+RUN apt update \
+    && apt install -y gpg-agent \
+    && curl -LO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && (dpkg -i ./google-chrome-stable_current_amd64.deb || apt-get install -fy) \
+    && curl -sSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add \
+    && rm google-chrome-stable_current_amd64.deb \
+    && rm -rf /var/lib/apt/lists/*
+
+
+
 
 RUN apt update \
     && apt install -y --no-install-recommends --allow-unauthenticated \
@@ -41,15 +46,12 @@ RUN apt update \
     && apt autoclean -y \
     && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
- 
- 
- 
 # Additional packages require ~600MB
 # libreoffice  pinta language-pack-zh-hant language-pack-gnome-zh-hant firefox-locale-zh-hant libreoffice-l10n-zh-tw
 
-# tini for subreap
+# tini to fix subreap
 ARG TINI_VERSION=v0.18.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-amd64 /bin/tini
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /bin/tini
 RUN chmod +x /bin/tini
 
 # ffmpeg
@@ -60,13 +62,13 @@ RUN apt update \
     && mkdir /usr/local/ffmpeg \
     && ln -s /usr/bin/ffmpeg /usr/local/ffmpeg/ffmpeg
 
-
 # python library
 COPY rootfs/usr/local/lib/web/backend/requirements.txt /tmp/
 RUN apt-get update \
     && dpkg-query -W -f='${Package}\n' > /tmp/a.txt \
-    && apt-get install -y python-pip python-dev build-essential \
-	&& pip install setuptools wheel && pip install -r /tmp/requirements.txt \
+    && apt-get install -y python3-pip python3-dev build-essential \
+	&& pip3 install setuptools wheel && pip3 install -r /tmp/requirements.txt \
+    && ln -s /usr/bin/python3 /usr/local/bin/python \
     && dpkg-query -W -f='${Package}\n' > /tmp/b.txt \
     && apt-get remove -y `diff --changed-group-format='%>' --unchanged-group-format='' /tmp/a.txt /tmp/b.txt | xargs` \
     && apt-get autoclean -y \
@@ -76,13 +78,13 @@ RUN apt-get update \
 
 # Install transmission related components
 RUN apt-get update \
-    && apt-get install -y transmission-cli transmission-common transmission-daemon curl rar unrar zip unzip ufw iputils-ping openvpn transmission-gtk transmission-qt less vim
+    && apt-get install -y transmission-cli transmission-common transmission-daemon curl rar unrar zip unzip ufw iputils-ping openvpn transmission-gtk transmission-qt less vim
 
 
 ################################################################################
 # builder
 ################################################################################
-FROM ubuntu:18.04 as builder
+FROM ubuntu:20.04 as builder
 
 
 
@@ -90,7 +92,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates gnupg patch
 
 # nodejs
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
+RUN curl -sL https://deb.nodesource.com/setup_12.x | bash - \
     && apt-get install -y nodejs
 
 # yarn
@@ -104,6 +106,7 @@ COPY web /src/web
 RUN cd /src/web \
     && yarn \
     && yarn build
+RUN sed -i 's#app/locale/#novnc/app/locale/#' /src/web/dist/static/novnc/app/ui.js
 
 
 
@@ -111,7 +114,7 @@ RUN cd /src/web \
 # merge
 ################################################################################
 FROM system
-LABEL maintainer="sysadmin@hkskies.com"
+LABEL maintainer="fcwu.tw@gmail.com"
 
 COPY --from=builder /src/web/dist/ /usr/local/lib/web/frontend/
 COPY rootfs /
