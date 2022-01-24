@@ -82,7 +82,7 @@ RUN apt-get update \
 
 # Install transmission related components
 RUN apt-get update \
-    && apt-get install -y transmission-cli transmission-common transmission-daemon curl rar unrar zip unzip ufw iputils-ping openvpn transmission-gtk transmission-qt less vim
+    && apt-get install -y transmission-cli transmission-common transmission-daemon curl rar unrar zip unzip ufw iputils-ping openvpn transmission-gtk transmission-qt less vim
 
 
 ################################################################################
